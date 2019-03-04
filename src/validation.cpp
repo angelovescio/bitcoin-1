@@ -1817,12 +1817,13 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
 
     // Special case for the genesis block, skipping connection of its transactions
     // (its coinbase is unspendable)
+    /*
     if (block.GetHash() == chainparams.GetConsensus().hashGenesisBlock) {
         if (!fJustCheck)
             view.SetBestBlock(pindex->GetBlockHash());
         return true;
     }
-
+    */
     nBlocksTotal++;
 
     bool fScriptChecks = true;
@@ -1925,7 +1926,9 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     // post BIP34 before approximately height 486,000,000 and presumably will
     // be reset before it reaches block 1,983,702 and starts doing unnecessary
     // BIP30 checking again.
-    assert(pindex->pprev);
+    if (block.GetHash() != chainparams.GetConsensus().hashGenesisBlock) {
+        assert(pindex->pprev);
+    }
     CBlockIndex *pindexBIP34height = pindex->pprev->GetAncestor(chainparams.GetConsensus().BIP34Height);
     //Only continue to enforce if we're below BIP34 activation height or the block hash at that height doesn't correspond.
     fEnforceBIP30 = fEnforceBIP30 && (!pindexBIP34height || !(pindexBIP34height->GetBlockHash() == chainparams.GetConsensus().BIP34Hash));
@@ -2043,8 +2046,11 @@ bool CChainState::ConnectBlock(const CBlock& block, CValidationState& state, CBl
     if (fJustCheck)
         return true;
 
-    if (!WriteUndoDataForBlock(blockundo, state, pindex, chainparams))
-        return false;
+    if (block.GetHash() != chainparams.GetConsensus().hashGenesisBlock)
+    {
+        if (!WriteUndoDataForBlock(blockundo, state, pindex, chainparams))
+            return false;
+    } 
 
     if (!pindex->IsValid(BLOCK_VALID_SCRIPTS)) {
         pindex->RaiseValidity(BLOCK_VALID_SCRIPTS);
